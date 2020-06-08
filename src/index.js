@@ -18,9 +18,12 @@ io.on('connection', socket => {
 
     console.log('User connected');
 
+    io.to(socket.id).emit('on-connected');
+
     // Nos conectamos a una room llamada game
     socket.on('start',()=>{
         socket.join('game');
+        console.log('user in game')
     })
 
     // Emitimos a todos los players de game
