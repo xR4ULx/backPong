@@ -25,11 +25,11 @@ io.on('connection', socket => {
 
     // Emitimos a todos los players de game
     socket.on('down',(data)=> {
-        socket.to('game').emit('down', data);
+        socket.in('game').emit('down', data);
     })
     
     socket.on('move',(data)=> {
-        socket.to('game').emit('move', data);
+        socket.in('game').emit('move', data);
     })
 
 });
