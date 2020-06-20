@@ -39,9 +39,10 @@ io.on('connection', socket => {
     socket.on('registered',(id)=>{
         client.query(`SELECT name FROM users WHERE device = '${id}'`,(error, results) =>{
             if(error){
-                socket.emit('on-registered');
+                socket.emit('on-registered',);
             }else if(results.rowCount > 0){
-                socket.emit('on-registered', results.rows);
+                var result = JSON.parse(results.rows)
+                socket.emit('on-registered', result[0].name);
             }else{
                 socket.emit('on-registered');
             }
