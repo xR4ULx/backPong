@@ -5,21 +5,39 @@ const dotenv = require('dotenv');
 const axios = require('axios');
 dotenv.config();
 
+const { Client } = require('pg');
+
+const client = new Client({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+client.connect();
+
+const getUsers = (request, response) => {
+    client.query('SELECT * FROM users', (error, results) => {
+      if (error) {
+        throw error
+      }
+      response.status(200).json(results.rows)
+    })
+}
+
 const app = express();
 const server = http.Server(app);
 const io = socketio(server);
 
 app.get('/', (req, res) => {
-    res.send('backPong server is running');
+    getUsers();
 });
 
 //socket io logic
 io.on('connection', socket => {
 
-    console.log('User connected');
-
-    io.to(socket.id).emit('on-connected');
-
+    console.log('Usuario conectado');
+    
     // Nos conectamos a una room llamada game
     socket.on('start',()=>{
         socket.join('game');
@@ -40,5 +58,5 @@ io.on('connection', socket => {
 const PORT = process.env.PORT || 5050;
 
 server.listen(PORT, () => {
-    console.log('running on ' + PORT);
+    console.log('Server corriendo en ' + PORT);
 });
