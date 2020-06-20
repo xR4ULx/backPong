@@ -35,6 +35,19 @@ io.on('connection', socket => {
 
     console.log('Usuario conectado');
     
+    socket.on('registered',(id)=>{
+        client.query(`SELECT name FROM users WHERE id = ${id}`,(error, results) =>{
+            if(error){
+                throw error
+            }else if(results.rowCount > 0){
+                io.to(socket.id).emit('on-registered', results.rows);
+            }else{
+                io.to(socket.id).emit('on-registered', '');
+            }
+            
+        })
+    })
+
     // Nos conectamos a una room llamada game
     socket.on('start',()=>{
         socket.join('game');
