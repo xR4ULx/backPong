@@ -41,8 +41,7 @@ io.on('connection', socket => {
             if(error){
                 socket.emit('on-registered',);
             }else if(results.rowCount > 0){
-                var result = JSON.parse(results.rows)
-                socket.emit('on-registered', result[0].name);
+                socket.emit('on-registered', results.rows[0].name);
             }else{
                 socket.emit('on-registered');
             }
