@@ -34,15 +34,16 @@ app.get('/', (req, res) => {
 io.on('connection', socket => {
 
     console.log('Usuario conectado');
+    socket.emit('on-connected', (_));
     
     socket.on('registered',(id)=>{
         client.query(`SELECT name FROM users WHERE id = ${id}`,(error, results) =>{
             if(error){
                 throw error
             }else if(results.rowCount > 0){
-                io.to(socket.id).emit('on-registered', results.rows);
+                socket.emit('on-registered', results.rows);
             }else{
-                io.to(socket.id).emit('on-registered', '');
+                socket.emit('on-registered', (_));
             }
             
         })
