@@ -37,9 +37,9 @@ io.on('connection', socket => {
     socket.emit('on-connected');
     
     socket.on('registered',(id)=>{
-        client.query(`SELECT name FROM users WHERE id = ${id}`,(error, results) =>{
+        client.query(`SELECT name FROM users WHERE id = '${id}'`,(error, results) =>{
             if(error){
-                throw error
+                socket.emit('on-registered',error);
             }else if(results.rowCount > 0){
                 socket.emit('on-registered', results.rows);
             }else{
