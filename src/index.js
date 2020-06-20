@@ -16,21 +16,18 @@ const client = new Client({
 
 client.connect();
 
-const getUsers = (request, response) => {
-    client.query('SELECT * FROM users', (error, results) => {
-      if (error) {
-        throw error
-      }
-      response.status(200).json(results.rows)
-    })
-}
 
 const app = express();
 const server = http.Server(app);
 const io = socketio(server);
 
 app.get('/', (req, res) => {
-    getUsers();
+    client.query('SELECT * FROM users', (error, results) => {
+        if (error) {
+          throw error
+        }
+        res.status(200).json(results.rows)
+      })
 });
 
 //socket io logic
