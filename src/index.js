@@ -49,6 +49,18 @@ io.on('connection', socket => {
         })
     })
 
+    socket.on('users',(id)=>{
+        client.query(`SELECT * FROM users WHERE device <> '${id}'`,(error, results)=>{
+            if(error){
+                socket.emit('on-users');
+            }else if(results.rowCount > 0){
+                socket.emit('on-users', results.rows);
+            }else{
+                socket.emit('on-users');
+            }
+        })
+    })
+
     // Nos conectamos a una room llamada game
     socket.on('start',()=>{
         socket.join('game');
