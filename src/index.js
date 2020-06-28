@@ -5,29 +5,34 @@ const dotenv = require('dotenv');
 const axios = require('axios');
 dotenv.config();
 
-const { Client } = require('pg');
+// POSTGRES SQL
+//const { Client } = require('pg');
 
-const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+//const client = new Client({
+//  connectionString: process.env.DATABASE_URL,
+//  ssl: {
+//    rejectUnauthorized: false
+//  }
+//});
 
-client.connect();
+//client.connect();
 
 
 const app = express();
 const server = http.Server(app);
 const io = socketio(server);
 
+class Player{
+    constructor(name, id){
+       this.name = name ;
+       this.id = id;
+    }
+}
+
+let Players = [];
+
 app.get('/', (req, res) => {
-    client.query('SELECT * FROM users', (error, results) => {
-        if (error) {
-          throw error
-        }
-        res.status(200).json(results.rows)
-      })
+    res.send(Players);
 });
 
 //socket io logic
@@ -36,44 +41,39 @@ io.on('connection', socket => {
     console.log('Usuario conectado');
     socket.emit('on-connected');
     
-    socket.on('registered',(id)=>{
-        client.query(`SELECT name FROM users WHERE device = '${id}'`,(error, results) =>{
-            if(error){
-                socket.emit('on-registered',);
-            }else if(results.rowCount > 0){
-                socket.emit('on-registered', results.rows[0].name);
-            }else{
-                socket.emit('on-registered');
-            }
-            
-        })
-    })
-
-    socket.on('users',(id)=>{
-        client.query(`SELECT * FROM users WHERE device <> '${id}'`,(error, results)=>{
-            if(error){
-                socket.emit('on-users');
-            }else if(results.rowCount > 0){
-                socket.emit('on-users', results.rows);
-            }else{
-                socket.emit('on-users');
-            }
-        })
+    socket.on('login',(player)=>{
+        p = new Player(player, socket.id);
+        Players.push(p);
     })
 
     // Nos conectamos a una room llamada game
-    socket.on('start',()=>{
-        socket.join('game');
-        console.log('user in game')
+    socket.on('request',(player1, player2)=>{
+
+        socket.join(`${player1}`);
+        const indexPlayer2 = Players.findIndex(item => item.displayName === player2);
+        io.to(Players[indexPlayer2].id).emit('on-request', player1);
+        console.log('Player1 in game')
+
+    })
+
+    socket.on('response',(gameid, accept)=>{
+        if(accept){
+            socket.join(`${gameid}`);
+            socket.in('${gameid}').emit('on-response');
+            console.log('Player2 accept game')
+        }
     })
 
     // Emitimos a todos los players de game
-    socket.on('down',(data)=> {
-        socket.in('game').emit('down', data);
+    socket.on('changeTurn',(gameid)=> {
+        socket.in('${gameid}').emit('on-changeTurn');
     })
-    
-    socket.on('move',(data)=> {
-        socket.in('game').emit('move', data);
+
+    socket.on('exit', (gameid)=>{
+        io.sockets.clients(gameid).forEach(function(s){
+            s.leave(gameid);
+        })
+        socket.in('${gameid}').emit('on-exit');
     })
 
 });
