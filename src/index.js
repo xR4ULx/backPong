@@ -3,77 +3,110 @@ const http = require('http');
 const socketio = require('socket.io');
 const dotenv = require('dotenv');
 const axios = require('axios');
+const { json, response } = require('express');
 dotenv.config();
-
-// POSTGRES SQL
-//const { Client } = require('pg');
-
-//const client = new Client({
-//  connectionString: process.env.DATABASE_URL,
-//  ssl: {
-//    rejectUnauthorized: false
-//  }
-//});
-
-//client.connect();
-
 
 const app = express();
 const server = http.Server(app);
 const io = socketio(server);
 
 class Player{
-    constructor(name, id){
-       this.name = name ;
-       this.id = id;
+    constructor(displayName, socket, room){
+       this.displayName = displayName ;
+       this.socket = socket;
+       this.room = room;
     }
 }
 
 let Players = [];
 
+function getPlayerByName(displayName) {
+    player = Players.findIndex(item => item.displayName === displayName);
+    if (player != -1) {
+        return Players[player];
+    }
+};
+
+function getPlayerById(id) {
+    player = Players.findIndex(item => item.socket.id === id);
+    if (player != -1) {
+        return Players[player];
+    }
+};
+
+function getRoom(player){
+    roomName = Object.keys(player.socket.adapter.rooms)[0];
+    return roomName;
+}
+
+
 app.get('/', (req, res) => {
-    res.send(Players);
+    res.send('alchemy')
 });
 
 //socket io logic
 io.on('connection', socket => {
 
-    console.log('Usuario conectado');
     socket.emit('on-connected');
     
-    socket.on('login',(player)=>{
-        p = new Player(player, socket.id);
-        Players.push(p);
-    })
-
-    // Nos conectamos a una room llamada game
-    socket.on('request',(player1, player2)=>{
-
-        socket.join(`${player1}`);
-        const indexPlayer2 = Players.findIndex(item => item.displayName === player2);
-        io.to(Players[indexPlayer2].id).emit('on-request', player1);
-        console.log('Player1 in game')
-
-    })
-
-    socket.on('response',(gameid, accept)=>{
-        if(accept){
-            socket.join(`${gameid}`);
-            socket.in('${gameid}').emit('on-response');
-            console.log('Player2 accept game')
+    socket.on('login',(displayName)=>{
+        player = getPlayerByName(displayName);
+        if(player != null){
+            Players.pop(player);
+            p = new Player(displayName, socket);
+            Players.push(p);
+        }else{
+            p = new Player(displayName, socket);
+            Players.push(p);
         }
     })
 
-    // Emitimos a todos los players de game
-    socket.on('changeTurn',(gameid)=> {
-        socket.in('${gameid}').emit('on-changeTurn');
+    socket.on('logout', (displayName)=>{
+        player = getPlayerByName(displayName);
+        if(player != null){
+            Players.pop(player);
+        }
     })
 
-    socket.on('exit', (gameid)=>{
-        io.sockets.clients(gameid).forEach(function(s){
-            s.leave(gameid);
-        })
-        socket.in('${gameid}').emit('on-exit');
+    // Nos conectamos a una room llamada game
+    socket.on('request',(displayName)=>{
+        
+        player1 = getPlayerById(socket.id);
+        player2 = getPlayerByName(displayName);
+
+        io.to(player2.socket.id).emit('on-request', player1.displayName);
+
+    })
+
+    socket.on('response',({ displayName, accept })=>{
+
+        if(accept){
+
+            player1 = getPlayerByName(displayName);
+            player2 = getPlayerById(socket.id);
+            roomid = player1.socket.id + player2.socket.id;
+            player1.room = roomid;
+            player2.room = roomid;
+            player1.socket.join(roomid);
+            player2.socket.join(roomid);
+
+            io.to(player1.socket.id).emit('on-response', true);
+
+        }else{
+            io.to(player1.socket.id).emit('on-response', false);
+        }
+    })
+    
+    // Emitimos a todos los players de game
+    socket.on('changeTurn',(data)=> {
+        player = getPlayerById(socket.id);
+        socket.in(player.room).emit('on-changeTurn',data);
+    })
+
+    socket.on('finish', (data)=>{
+        player = getPlayerById(socket.id);
+        room = player.room;
+        socket.leave(room);
     })
 
 });
