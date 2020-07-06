@@ -25,6 +25,8 @@ function getPlayerByName(displayName) {
         player = Players.findIndex(item => item.displayName === displayName);
         if (player != -1) {
             return Players[player];
+        }else{
+            return null;
         }
     } catch (error) {
         console.log(error.message);
@@ -38,6 +40,8 @@ function getPlayerById(id) {
         player = Players.findIndex(item => item.socket.id === id);
         if (player != -1) {
             return Players[player];
+        }else{
+            return null;
         }
     } catch (error) {
         console.log(error.message);
@@ -63,7 +67,7 @@ io.on('connection', socket => {
     socket.on('login',(displayName)=>{
         player = getPlayerByName(displayName);
         if(player != null){
-            Players.pop(player);
+            Players.splice(player);
             p = new Player(displayName, socket,null);
             Players.push(p);
         }else{
@@ -81,7 +85,7 @@ io.on('connection', socket => {
         }
         /* Eliminamos el usuario de la lista */
         if(player != null){
-            Players.pop(player);
+            Players.splice(player);
         }
     })
 
