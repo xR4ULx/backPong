@@ -21,23 +21,30 @@ class Player{
 let Players = [];
 
 function getPlayerByName(displayName) {
-    player = Players.findIndex(item => item.displayName === displayName);
-    if (player != -1) {
-        return Players[player];
+    try {
+        player = Players.findIndex(item => item.displayName === displayName);
+        if (player != -1) {
+            return Players[player];
+        }
+    } catch (error) {
+        console.log(error.message);
+        return null;
     }
+
 };
 
 function getPlayerById(id) {
-    player = Players.findIndex(item => item.socket.id === id);
-    if (player != -1) {
-        return Players[player];
+    try {
+        player = Players.findIndex(item => item.socket.id === id);
+        if (player != -1) {
+            return Players[player];
+        }
+    } catch (error) {
+        console.log(error.message);
+        return null;
     }
-};
 
-function getRoom(player){
-    roomName = Object.keys(player.socket.adapter.rooms)[0];
-    return roomName;
-}
+};
 
 
 app.get('/', (req, res) => {
@@ -53,16 +60,22 @@ io.on('connection', socket => {
         player = getPlayerByName(displayName);
         if(player != null){
             Players.pop(player);
-            p = new Player(displayName, socket);
+            p = new Player(displayName, socket,null);
             Players.push(p);
         }else{
-            p = new Player(displayName, socket);
+            p = new Player(displayName, socket,null);
             Players.push(p);
         }
     })
 
     socket.on('logout', (displayName)=>{
         player = getPlayerByName(displayName);
+
+        /* Salimos de la room si existe */
+        if(player.room != null){
+            socket.leave(player.room);
+        }
+        /* Eliminamos el usuario de la lista */
         if(player != null){
             Players.pop(player);
         }
@@ -74,7 +87,11 @@ io.on('connection', socket => {
         player1 = getPlayerById(socket.id);
         player2 = getPlayerByName(displayName);
 
-        io.to(player2.socket.id).emit('on-request', player1.displayName);
+        if(player1 != null && player2 != null){
+            io.to(player2.socket.id).emit('on-request', player1.displayName);
+        }else{
+            io.to(socket.id).emit('on-cancel-request', true);
+        }
 
     })
 
@@ -84,13 +101,19 @@ io.on('connection', socket => {
 
             player1 = getPlayerByName(displayName);
             player2 = getPlayerById(socket.id);
-            roomid = player1.socket.id + player2.socket.id;
-            player1.room = roomid;
-            player2.room = roomid;
-            player1.socket.join(roomid);
-            player2.socket.join(roomid);
 
-            io.to(player1.socket.id).emit('on-response', true);
+            if(player1 != null && player2 != null){
+
+                roomid = player1.socket.id + player2.socket.id;
+                player1.room = roomid;
+                player2.room = roomid;
+                player1.socket.join(roomid);
+                player2.socket.join(roomid);
+                io.to(player1.socket.id).emit('on-response', true);
+
+            }else{
+                io.to(socket.id).emit('on-cancel-request', true);
+            }
 
         }else{
             io.to(player1.socket.id).emit('on-response', false);
@@ -105,8 +128,8 @@ io.on('connection', socket => {
 
     socket.on('finish', (data)=>{
         player = getPlayerById(socket.id);
-        room = player.room;
-        socket.leave(room);
+        x = player.room;
+        socket.leave(x);
     })
 
 });
