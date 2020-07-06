@@ -48,9 +48,9 @@ function getPlayerById(id) {
 
 
 app.get('/', (req, res) => {
-    let response;
+    let response = '';
     Players.forEach(function(p){
-        response = response + p.displayName + "-" + p.room + "/n";
+        response = response + p.displayName + " room:" + p.room + "\n";
     })
     res.send(response);
 });
