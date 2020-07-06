@@ -48,7 +48,11 @@ function getPlayerById(id) {
 
 
 app.get('/', (req, res) => {
-    res.send('alchemy')
+    let response;
+    Players.forEach(function(p){
+        response = response + p.displayName + "-" + p.room + "/n";
+    })
+    res.send(response);
 });
 
 //socket io logic
