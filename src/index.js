@@ -52,11 +52,13 @@ function getPlayerById(id) {
 
 
 app.get('/', (req, res) => {
-    let response = '';
+    let gamers = [];
     Players.forEach(function(p){
-        response = response + p.displayName + " room:" + p.room + "\n";
+        let gamer = JSON.stringify(p);
+        gamers.push(gamer);
+        //response = response + p.displayName + " room:" + p.room + "\n";
     })
-    res.send(response);
+    res.send(gamers);
 });
 
 //socket io logic
@@ -128,6 +130,8 @@ io.on('connection', socket => {
         }
     })
     
+
+
     // Emitimos a todos los players de game
     socket.on('changeTurn',(data)=> {
         player = getPlayerById(socket.id);
@@ -136,8 +140,15 @@ io.on('connection', socket => {
 
     socket.on('finish', (data)=>{
         player = getPlayerById(socket.id);
-        x = player.room;
-        socket.leave(x);
+        socket.in(player.room).emit('on-finish',data);
+    })
+
+    socket.on('exit-game',(data){
+        player = getPlayerById(socket.id);
+        xRoom = player.room;
+        if(xRoom != null){
+            socket.leave(xRoom);
+        }
     })
 
 });
