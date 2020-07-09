@@ -3,6 +3,7 @@ const http = require('http');
 const socketio = require('socket.io');
 const dotenv = require('dotenv');
 const axios = require('axios');
+const circularJson = require('circular-json');
 const { json, response } = require('express');
 dotenv.config();
 
@@ -11,9 +12,9 @@ const server = http.Server(app);
 const io = socketio(server);
 
 class Player{
-    constructor(displayName, socket, room){
+    constructor(displayName, socket_id, room){
        this.displayName = displayName ;
-       this.socket = socket;
+       this.socket_id = socket_id;
        this.room = room;
     }
 }
@@ -37,7 +38,7 @@ function getPlayerByName(displayName) {
 
 function getPlayerById(id) {
     try {
-        player = Players.findIndex(item => item.socket.id === id);
+        player = Players.findIndex(item => item.socket_id === id);
         if (player != -1) {
             return Players[player];
         }else{
@@ -52,13 +53,7 @@ function getPlayerById(id) {
 
 
 app.get('/', (req, res) => {
-    let gamers = [];
-    Players.forEach(function(p){
-        let gamer = JSON.stringify(p);
-        gamers.push(gamer);
-        //response = response + p.displayName + " room:" + p.room + "\n";
-    })
-    res.send(gamers);
+    res.json(Players);
 });
 
 //socket io logic
@@ -70,10 +65,10 @@ io.on('connection', socket => {
         player = getPlayerByName(displayName);
         if(player != null){
             Players.splice(player);
-            p = new Player(displayName, socket,null);
+            p = new Player(displayName, socket.id,null);
             Players.push(p);
         }else{
-            p = new Player(displayName, socket,null);
+            p = new Player(displayName, socket.id,null);
             Players.push(p);
         }
     })
@@ -91,14 +86,22 @@ io.on('connection', socket => {
         }
     })
 
-    // Nos conectamos a una room llamada game
     socket.on('request',(displayName)=>{
         
         player1 = getPlayerById(socket.id);
         player2 = getPlayerByName(displayName);
 
         if(player1 != null && player2 != null){
-            io.to(player2.socket.id).emit('on-request', player1.displayName);
+
+            roomid = player1.socket_id + player2.socket_id;
+            player1.room = roomid;
+            player2.room = roomid;
+            io.sockets.connected[player1.socket_id].join(roomid);
+            console.log(player1.socket);
+            io.sockets.connected[player2.socket_id].join(roomid);
+            console.log(player2.socket);
+
+            io.to(player2.socket_id).emit('on-request', player1.displayName);
         }else{
             io.to(socket.id).emit('on-cancel-request', true);
         }
@@ -114,19 +117,14 @@ io.on('connection', socket => {
 
             if(player1 != null && player2 != null){
 
-                roomid = player1.socket.id + player2.socket.id;
-                player1.room = roomid;
-                player2.room = roomid;
-                player1.socket.join(roomid);
-                player2.socket.join(roomid);
-                io.to(player1.socket.id).emit('on-response', true);
+                io.to(player1.socket_id).emit('on-response', true);
 
             }else{
                 io.to(socket.id).emit('on-cancel-request', true);
             }
 
         }else{
-            io.to(player1.socket.id).emit('on-response', false);
+            io.to(player1.socket_id).emit('on-response', false);
         }
     })
     
@@ -140,15 +138,19 @@ io.on('connection', socket => {
 
     socket.on('finish', (data)=>{
         player = getPlayerById(socket.id);
+        io.to(socket.id).emit('on-finish',data);
         socket.in(player.room).emit('on-finish',data);
+        console.log(player.displayName + 'finish');
     })
 
-    socket.on('exit-game',(data){
+    socket.on('exit-game',(data)=>{
         player = getPlayerById(socket.id);
-        xRoom = player.room;
-        if(xRoom != null){
-            socket.leave(xRoom);
+        io.to(socket.id).emit('on-exit-game', true);
+        if(player.room != null){
+            socket.leave(player.room);
+            player.room = null;
         }
+        console.log(player.displayName + 'exit-game');
     })
 
 });
