@@ -64,7 +64,7 @@ io.on('connection', socket => {
     socket.on('login',(displayName)=>{
         indexPlayer = Players.findIndex(item => item.displayName === displayName);
         if(indexPlayer != -1){
-            Players.splice(indexPlayer);
+            Players.splice(indexPlayer,1);
             p = new Player(displayName, socket.id,null);
             Players.push(p);
         }else{
