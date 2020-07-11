@@ -79,10 +79,11 @@ io.on('connection', socket => {
         /* Salimos de la room si existe */
         if(player.room != null){
             socket.leave(player.room);
+            player.room = null;
         }
         /* Eliminamos el usuario de la lista */
         if(player != null){
-            Players.splice(player);
+            Players.splice(player,1);
         }
     })
 
