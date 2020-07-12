@@ -2,8 +2,6 @@ const express = require('express');
 const http = require('http');
 const socketio = require('socket.io');
 const dotenv = require('dotenv');
-const axios = require('axios');
-const circularJson = require('circular-json');
 const { json, response } = require('express');
 dotenv.config();
 
