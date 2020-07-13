@@ -96,9 +96,7 @@ io.on('connection', socket => {
             player1.room = roomid;
             player2.room = roomid;
             io.sockets.connected[player1.socket_id].join(roomid);
-            console.log(player1.socket);
             io.sockets.connected[player2.socket_id].join(roomid);
-            console.log(player2.socket);
 
             io.to(player2.socket_id).emit('on-request', player1.displayName);
         }else{
