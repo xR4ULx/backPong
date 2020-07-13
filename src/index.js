@@ -129,25 +129,40 @@ io.on('connection', socket => {
 
     // Emitimos a todos los players de game
     socket.on('changeTurn',(data)=> {
-        player = getPlayerById(socket.id);
-        socket.in(player.room).emit('on-changeTurn',data);
+        try {
+            player = getPlayerById(socket.id);
+            socket.in(player.room).emit('on-changeTurn',data);
+        } catch (error) {
+            console.log(error.message);
+        }
+        
     })
 
     socket.on('finish', (data)=>{
-        player = getPlayerById(socket.id);
-        io.to(socket.id).emit('on-finish',data);
-        socket.in(player.room).emit('on-finish',data);
-        console.log(player.displayName + 'finish');
+        try {
+            player = getPlayerById(socket.id);
+            io.to(socket.id).emit('on-finish',data);
+            socket.in(player.room).emit('on-finish',data);
+            console.log(player.displayName + 'finish');
+        } catch (error) {
+            console.log(error.message);
+        }
+        
     })
 
     socket.on('exit-game',(data)=>{
-        player = getPlayerById(socket.id);
-        io.to(socket.id).emit('on-exit-game', true);
-        if(player.room != null){
-            socket.leave(player.room);
-            player.room = null;
+        try {
+            player = getPlayerById(socket.id);
+            io.to(socket.id).emit('on-exit-game', true);
+            if(player.room != null){
+                socket.leave(player.room);
+                player.room = null;
+            }
+            console.log(player.displayName + 'exit-game');
+        } catch (error) {
+            console.log(error.message);
         }
-        console.log(player.displayName + 'exit-game');
+        
     })
 
 });
