@@ -158,7 +158,6 @@ io.on('connection', socket => {
     socket.on('finish', (data) => {
         try {
             player = getPlayerById(socket.id);
-            io.to(socket.id).emit('on-finish', data);
             socket.in(player.room).emit('on-finish', data);
             console.log(player.displayName + 'finish');
         } catch (error) {
