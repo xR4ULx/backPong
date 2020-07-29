@@ -146,14 +146,15 @@ io.on('connection', socket => {
 
     // Emitimos a todos los players de game
     socket.on('changeTurn', (data) => {
-        try {
-            player = getPlayerById(socket.id);
-            socket.in(player.room).emit('on-changeTurn', data);
-        } catch (error) {
-            console.log(error.message);
-        }
+            try {
+                player = getPlayerById(socket.id);
+                socket.in(player.room).emit('on-changeTurn', data);
+            } catch (error) {
+                console.log(error.message);
+            }
 
-    })
+        })
+        //Coment
 
     socket.on('finish', (data) => {
         try {
