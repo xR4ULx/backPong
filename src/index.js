@@ -78,6 +78,7 @@ io.on('connection', socket => {
 
     socket.on('login', (displayName) => {
 
+        console.log('wizard: login displayName: ' + displayName);
         try {
             indexPlayer = Players.findIndex(item => item.displayName === displayName);
             if (indexPlayer != -1) {
